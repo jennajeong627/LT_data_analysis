@@ -9,7 +9,10 @@ plt.rcParams['font.family'] = 'Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] = False
 
 # Output directory
-output_dir = "reanalyze_gt1_1796"
+# 결과 파일 경로
+output_dir = "output/11월/reanalyze_gt1_1796"
+# 각 월별 데이터 CSV 파일 경로
+csv_file_path = "2024_11월_data/2024_11월__학생문항별결과.csv"
 os.makedirs(output_dir, exist_ok=True)
 
 print("=" * 80)
@@ -18,7 +21,8 @@ print("=" * 80)
 
 # Load student-item data
 print("\n[1] 데이터 로딩...")
-df_items = pd.read_csv('2024_5월_data/2024_5월_학생문항별결과.csv', encoding='utf-8-sig')
+# 각 월별 데이터 CSV 파일 경로
+df_items = pd.read_csv(csv_file_path, encoding='utf-8-sig')
 df_gt1 = df_items[df_items['레벨'] == 'GT1'].copy()
 
 # 고유 식별자 생성 (학생명 + 코드)
