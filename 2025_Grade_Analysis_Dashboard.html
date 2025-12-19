@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025학년도 11월 GT2-MAG2 통합 성적 분석 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="./scatter_data.js"></script>
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .grade-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .grade-1 {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .grade-warning {
+            background-color: #fef9c3;
+            color: #854d0e;
+        }
+
+        .grade-danger {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title::before {
+            content: '';
+            display: block;
+            width: 6px;
+            height: 24px;
+            background: #3b82f6;
+            border-radius: 3px;
+        }
+
+        .sub-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #475569;
+            margin-bottom: 1rem;
+        }
+
+        .highlight {
+            color: #2563eb;
+            font-weight: 800;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 24px;
+            height: fit-content;
+            width: 220px;
+            flex-shrink: 0;
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-item {
+            display: block;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+            color: #475569;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background-color: #f1f5f9;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+
+<body class="text-slate-800">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white py-8">
+        <div class="container mx-auto px-4">
+            <h1 class="text-3xl font-black mb-2">2025학년도 11월 전국 2학년 수준별 통합 성적 분석</h1>
+            <p class="text-slate-400 text-lg">GT2 · MGT2 · S2 · MAG2 통합 데이터 (총 3,579명) 기반 심층 리포트</p>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 flex flex-col md:flex-row gap-8 py-8">
+        <!-- Navigation Sidebar -->
+        <aside class="sidebar h-fit">
+            <nav class="flex flex-col gap-1 text-sm">
+                <button onclick="showTab(1)" class="nav-item active text-left" id="tab-btn-1">1. 성적 분포 및 심층 분석</button>
+                <button onclick="showTab(2)" class="nav-item text-left" id="tab-btn-2">2. 학부모 상담 리포트</button>
+                <button onclick="showTab(3)" class="nav-item text-left" id="tab-btn-3">3. 교수법 가이드</button>
+            </nav>
+        </aside>
+
+        <main class="flex-grow min-w-0">
+
+            <!-- Tab 1: Visualization & Deep Dive -->
+            <div id="tab-1" class="tab-content transition-all duration-300">
+                <section id="section-1" class="mb-12">
+                    <h2 class="section-title">1. 레벨별 등급 분포 현황 (Student Volume & Grade Cutoffs)</h2>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <div class="card">
+                            <h3 class="sub-title mb-4">절대평가 등급 분포 (Absolute Grades)</h3>
+                            <div class="relative h-[600px] w-full">
+                                <canvas id="absScatterChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3 class="sub-title mb-4">상대평가 등급 분포 (Relative Grades)</h3>
+                            <div class="relative h-[600px] w-full">
+                                <canvas id="relScatterChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Box Plot Statistical Interpretation -->
+                    <div class="card bg-blue-50 border-t-4 border-blue-500 mb-12">
+                        <h3 class="sub-title text-blue-900 mb-4 flex items-center gap-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                                </path>
+                            </svg>
+                            데이터 시각화 핵심 해석
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm">
+                            <div class="space-y-3">
+                                <h4 class="font-bold text-blue-800 border-b border-blue-200 pb-1">[절대평가: 성취도 관점]</h4>
+                                <ul class="space-y-2">
+                                    <li><span class="font-bold text-blue-600">● MAG2의 고득점 독주:</span> 1등급 구간(54-60점)에 전체
+                                        인원의
+                                        압도적 다수가 집중되어 있습니다. 이는 최상위 레벨이 이미 '완성형' 성취도에 도달했음을 보여줍니다.</li>
+                                    <li><span class="font-bold text-blue-600">● 레벨 간 성취도 격차:</span> GT2와 MGT2는 3~5등급
+                                        구간(30-47점)에 넓게
+                                        분포하며 기초 체전 보강이 시급한 구간입니다. 점수 구간별 학생 수 숫자를 통해 레벨별 주력 성취 점수대를 직관적으로 확인 가능합니다.</li>
+                                </ul>
+                            </div>
+                            <div class="space-y-3">
+                                <h4 class="font-bold text-blue-800 border-b border-blue-200 pb-1">[상대평가: 변별력 관점]</h4>
+                                <ul class="space-y-2">
+                                    <li><span class="font-bold text-blue-600">● 등급 컷의 상향 평준화:</span> 상대평가 시 1등급 점수 구간이
+                                        절대평가보다 좁게 형성됩니다. 이는 상위권 점수 경쟁이 그만큼 치열함을 의미하며, 단 1~2점 차이로 전국 등급이 갈리는 양상입니다.</li>
+                                    <li><span class="font-bold text-blue-600">● 중위권의 등급 하락(Shift):</span> S2나 MGT2 내에서
+                                        '절대평가 3등급'을 받은 학생도 전체 통합 순위(상대평가)에서는 5~6등급으로 밀려나는 현상이 뚜렷하게 관측됩니다.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+                <!-- Section 2: Analysis Result -->
+                <section id="section-2" class="mb-12">
+                    <h2 class="section-title">2. 심층 분석 결과</h2>
+
+                    <!-- 2.1 Summary -->
+                    <div class="card border-l-4 border-blue-500">
+                        <h3 class="sub-title text-blue-800">① 종합 요약: "등급 착시(Illusion) 현상 확인"</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                            <div class="p-4 bg-blue-50 rounded-lg">
+                                <div class="text-3xl font-black text-blue-600 mb-1">90%</div>
+                                <div class="font-bold text-slate-700">MAG2의 독주</div>
+                                <div class="text-sm text-slate-500 mt-2">상대평가 1등급(Top 4%)의<br>90%를 MAG2가 점유</div>
+                            </div>
+                            <div class="p-4 bg-yellow-50 rounded-lg">
+                                <div class="text-3xl font-black text-yellow-600 mb-1">-2.5</div>
+                                <div class="font-bold text-slate-700">S2 등급 하락</div>
+                                <div class="text-sm text-slate-500 mt-2">절대 1~2등급 → 상대 4~5등급<br>평균 2.5단계 하락</div>
+                            </div>
+                            <div class="p-4 bg-red-50 rounded-lg">
+                                <div class="text-3xl font-black text-red-600 mb-1">Avg↓</div>
+                                <div class="font-bold text-slate-700">MGT2의 위치</div>
+                                <div class="text-sm text-slate-500 mt-2">점수는 3등급이나<br>실제 위치는 평균 이하(5등급)</div>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-slate-700 leading-relaxed">
+                            전체적으로 <strong>'점수 중심의 절대평가'</strong>와 <strong>'등수 중심의 상대평가'</strong> 간에 뚜렷한 괴리가 관측되었습니다.
+                            특히 최상위권(MAG2)에 고득점자가 과밀하게 분포하여, 그 바로 아래인 <strong>S2, MGT2 구간에서 급격한 등급 하락(Shift
+                                Effect)</strong>이
+                            발생했습니다.
+                        </p>
+                    </div>
+
+                    <!-- 2.2 Level Detail -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <!-- MAG2 -->
+                        <div class="card border border-slate-200">
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="grade-badge grade-1 bg-purple-100 text-purple-700">최상위권</span>
+                                <h4 class="text-xl font-bold">MAG2</h4>
+                            </div>
+                            <ul class="space-y-2 text-sm text-slate-600">
+                                <li>• <strong class="text-slate-800">절대평가:</strong> 67%가 1등급(54점↑). 실패가 없는 집단.</li>
+                                <li>• <strong class="text-slate-800">상대평가:</strong> 전국 1등급 194명 중 175명 배출.</li>
+                                <li>• <strong class="text-red-600">특이점:</strong> 절대 1등급(615명) 중 440명은 상대평가에서 2~3등급으로 밀림.
+                                    <strong>실수 1개가 등급을 가르는 전쟁터.</strong>
+                                </li>
+                            </ul>
+                        </div>
+                        <!-- S2 -->
+                        <div class="card border border-slate-200">
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="grade-badge grade-warning">착시 주의</span>
+                                <h4 class="text-xl font-bold">S2</h4>
+                            </div>
+                            <ul class="space-y-2 text-sm text-slate-600">
+                                <li>• <strong class="text-slate-800">절대평가:</strong> 2등급(406명) 주축. 우수한 성취도.</li>
+                                <li>• <strong class="text-slate-800">상대평가:</strong> 4~5등급으로 하락.</li>
+                                <li>• <strong class="text-red-600">시사점:</strong> "시험은 잘 봤는데 등수는 중간". MAG2와의 경쟁에서 밀려남.
+                                    <strong>변별력 문항(Killer) 대처 능력 부족.</strong>
+                                </li>
+                            </ul>
+                        </div>
+                        <!-- MGT2 -->
+                        <div class="card border border-slate-200">
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="grade-badge bg-green-100 text-green-700">중위권</span>
+                                <h4 class="text-xl font-bold">MGT2</h4>
+                            </div>
+                            <ul class="space-y-2 text-sm text-slate-600">
+                                <li>• <strong class="text-slate-800">절대평가:</strong> 2~3등급 안정권.</li>
+                                <li>• <strong class="text-slate-800">상대평가:</strong> 5~6등급. 평균보다 소폭 아래.</li>
+                                <li>• <strong class="text-blue-600">기회:</strong> 상위권 도약이냐 하위권 추락이냐의 갈림길. 레벨 역전(S2 하위권보다
+                                    우수)
+                                    현상
+                                    관측됨.</li>
+                            </ul>
+                        </div>
+                        <!-- GT2 -->
+                        <div class="card border border-slate-200">
+                            <div class="flex justify-between items-start mb-3">
+                                <span class="grade-badge bg-gray-100 text-gray-700">기본</span>
+                                <h4 class="text-xl font-bold">GT2</h4>
+                            </div>
+                            <ul class="space-y-2 text-sm text-slate-600">
+                                <li>• <strong class="text-slate-800">절대평가:</strong> 3~5등급에 넓게 분포.</li>
+                                <li>• <strong class="text-slate-800">상대평가:</strong> 7~8등급 비율 높음.</li>
+                                <li>• <strong class="text-red-600">전략:</strong> 상대평가 등급보다는 절대평가 36점(4등급) 확보를 통한 기초 다지기가
+                                    급선무.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 2.3 Conclusion -->
+                    <div class="card bg-slate-800 text-white">
+                        <h3 class="sub-title text-white">③ 결론 및 제언</h3>
+                        <div class="space-y-4">
+                            <div class="flex gap-4">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center font-bold text-xl">
+                                    1</div>
+                                <div>
+                                    <h4 class="font-bold text-lg">점수와 등수의 괴리 수용</h4>
+                                    <p class="text-slate-300 text-sm">S2/MGT2 학생은 절대평가 성적표의 '안정감'을 버리고, 통합 경쟁에서의 '위기감'을
+                                        가져야
+                                        합니다.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center font-bold text-xl">
+                                    2</div>
+                                <div>
+                                    <h4 class="font-bold text-lg">MAG2는 '실수', 나머지는 '실력'</h4>
+                                    <p class="text-slate-300 text-sm">MAG2는 만점 수성(Stay-on-top) 전략이 핵심이며, 나머지는 고난도 문항
+                                        정복(Offensive)이 필요합니다.</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div
+                                    class="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center font-bold text-xl">
+                                    3</div>
+                                <div>
+                                    <h4 class="font-bold text-lg">레벨 역전의 활용</h4>
+                                    <p class="text-slate-300 text-sm">MGT2 최상위권이 S2 하위권보다 튼튼합니다. 무리한 월반보다는 실속 있는 내신 관리가
+                                        유리할
+                                        수
+                                        있습니다.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Tab 2: Parent Counseling Report -->
+            <div id="tab-2" class="tab-content hidden transition-all duration-300">
+                <section id="section-3" class="mb-12">
+                    <h2 class="section-title">2. 학부모 상담 리포트 (맞춤 분석 및 로드맵)</h2>
+
+                    <!-- Case Study Header -->
+                    <div class="card bg-slate-50 border-l-8 border-slate-800 mb-8">
+                        <div class="flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">개별 학생 분석 사례
+                                    (Student Profile)</span>
+                                <div class="space-y-1 text-slate-800 text-base font-medium">
+                                    <div><strong class="text-slate-500">이름:</strong> 김지우</div>
+                                    <div><strong class="text-slate-500">캠퍼스명:</strong> 수성</div>
+                                    <div><strong class="text-slate-500">레벨:</strong> MGT2</div>
+                                    <div><strong class="text-slate-500">학급:</strong> MGT2-2</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">
+                                    <div class="text-xs text-slate-500">절대평가</div>
+                                    <div class="font-bold text-blue-600">2등급 (42점)</div>
+                                </div>
+                                <div class="bg-white px-4 py-2 rounded-lg shadow-sm border border-slate-200">
+                                    <div class="text-xs text-slate-500">상대평가</div>
+                                    <div class="font-bold text-red-600">5등급 (상위 35%)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <!-- National Position Visualization Card -->
+                        <div class="card">
+                            <h3 class="sub-title mb-6 flex items-center gap-2">
+                                <span>📊</span> 전국 성적 위치 (National Percentile)
+                            </h3>
+                            <div class="relative h-64 w-full mb-6">
+                                <canvas id="jiwooPositionChart"></canvas>
+                            </div>
+                            <div
+                                class="bg-blue-50 p-5 rounded-xl border border-blue-100 flex items-start gap-4 text-sm text-slate-700">
+                                <div class="p-2 bg-blue-500 rounded-lg text-white">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="leading-relaxed">
+                                        <strong>김지우 학생</strong>은 전체 응시생 3,579명 중 <span
+                                            class="text-blue-700 font-bold underline decoration-blue-200 underline-offset-4">상위
+                                            35%</span> 지점에 위치하고 있습니다.
+                                        현재 MGT2 레벨 내에서는 우수한 편이나, 통합 성적(MAG2~GT2) 기준으로는 5등급 구간의 시작점에 해당합니다.
+                                        상위 레벨인 S2, MAG2 학생들과의 격차를 좁히기 위한 <span class="font-bold">심화 사고력 훈련</span>이 병행된다면
+                                        충분히
+                                        등급 수직 상승이 가능합니다.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Class Position Visualization Card -->
+                        <div class="card">
+                            <h3 class="sub-title mb-6 flex items-center gap-2">
+                                <span>🧑‍🏫</span> 반별 성적 위치 (Class Percentile)
+                            </h3>
+                            <div class="relative h-64 w-full mb-6">
+                                <canvas id="jiwooClassPositionChart"></canvas>
+                            </div>
+                            <div
+                                class="bg-green-50 p-5 rounded-xl border border-green-100 flex items-start gap-4 text-sm text-slate-700">
+                                <div class="p-2 bg-green-500 rounded-lg text-white">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="leading-relaxed">
+                                        <strong>김지우 학생</strong>은 소속 반 학생들 중 <span
+                                            class="text-green-700 font-bold underline decoration-green-200 underline-offset-4">상위
+                                            20%</span> 지점에 위치하고 있습니다.
+                                        반 내에서는 우수한 성적을 유지하고 있으므로, 현재의 학습 흐름을 유지하며 전국 단위 경쟁력을 강화하는 데 집중할 수 있습니다.
+                                        담임 교사께서는 지우 학생이 반 내에서 긍정적인 학습 분위기를 조성하는 데 기여할 수 있도록 격려해 주십시오.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 과목별 성취도 Table -->
+                    <div class="card mb-8">
+                        <h3 class="text-xl font-bold text-slate-900 mb-2 flex items-center gap-2">
+                            과목별 성취도
+                        </h3>
+
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                        <th class="px-6 py-4 font-black">과목</th>
+                                        <th class="px-6 py-4 font-black">전국 순위</th>
+                                        <th class="px-6 py-4 font-black">강점 스킬(맞춘 개수)</th>
+                                        <th class="px-6 py-4 font-black">보완 스킬(오답 개수)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-6 py-4 font-bold text-slate-900">English</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">상위 67.4%</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">'Drawing conclusions' (4개)</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">'Drawing conclusions' (4개)</td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-6 py-4 font-bold text-slate-900">Speech Building</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">상위 77.8%</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">'Applying content/academic
+                                            vocabulary' (6개)</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">'Using context clues' (4개)</td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-6 py-4 font-bold text-slate-900">Eng. Foundations</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">상위 92.5%</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">'Combining sentences
+                                            (subject/predicate)' (2개)</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">'Applying plural subject pronouns'
+                                            (2개)</td>
+                                    </tr>
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-6 py-4 font-bold text-slate-900">Listening</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">상위 30.7%</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">'Recalling facts' (5개)</td>
+                                        <td class="px-6 py-4 text-slate-600 text-sm">정보 없음 (오답 개수가 0이므로)</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Content 1: Interpretation -->
+                        <div class="card border-t-4 border-pink-500">
+                            <h3 class="text-xl font-bold text-pink-700 mb-4 flex items-center gap-2">
+                                <span>🔍</span> 자녀 성적 심층 해석
+                            </h3>
+                            <div class="space-y-4 text-sm text-slate-700">
+                                <section>
+                                    <strong class="text-slate-900 block mb-1">"성실하지만 가시적인 경쟁력은 보강 필요"</strong>
+                                    지우 학생은 42점으로 절대평가 기준 2등급의 우수한 성적을 거두었습니다. 이는 학원 내 커리큘럼을 성실히 이행하고 있음을 보여줍니다.
+                                </section>
+                                <section>
+                                    <strong class="text-slate-900 block mb-1">상대평가 5등급의 의미 (착시 현상)</strong>
+                                    하지만 전국 단위 석차는 상위 35%로 5등급에 해당합니다. 상위권 레벨(MAG2)에 고득점자가 과밀 분포되어 있어, 점수에 비해 실제 위치가 낮게
+                                    형성되는 전형적인 '상대평가 착시' 구간에 있습니다. 실질적인 실력 향상을 위해 사고력 확장이 필요한 시점입니다.
+                                </section>
+                            </div>
+                        </div>
+
+                        <!-- Content 2: Prescription -->
+                        <div class="card border-t-4 border-emerald-500">
+                            <h3 class="text-xl font-bold text-emerald-700 mb-4 flex items-center gap-2">
+                                <span>📝</span> 맞춤형 학습 처방
+                            </h3>
+                            <div class="space-y-4 text-sm text-slate-700">
+                                <section>
+                                    <strong class="text-slate-900 block mb-1">고난도 사고력 문항 '소거법' 정밀 훈련</strong>
+                                    현재 틀리는 문항의 대부분이 '매력적 오답'에 걸리는 패턴입니다. 정답을 찾는 데 급급하기보다, 오답 4개가 왜 답이 아닌지를 논리적으로 설명하는
+                                    훈련을 통해 실수를 실력으로 전환해야 합니다.
+                                </section>
+                                <section>
+                                    <strong class="text-slate-900 block mb-1">고난도 독해 호흡 기르기</strong>
+                                    문장 단위 해석은 정확하나 긴 지문의 맥락 파악에서 실점이 발생합니다. 하루 3지문 이상 고난도 지문을 정해진 시간(지문당 2분) 내에 핵심 키워드를
+                                    추출하며 읽는 연습이 시급합니다.
+                                </section>
+                            </div>
+                        </div>
+
+                        <!-- Content 3: Roadmap & Home Support -->
+                        <div class="card border-t-4 border-indigo-500">
+                            <h3 class="text-xl font-bold text-indigo-700 mb-4 flex items-center gap-2">
+                                <span>🚀</span> 성취 로드맵 & 가정 지원
+                            </h3>
+                            <div class="space-y-4 text-sm text-slate-700">
+                                <section>
+                                    <strong class="text-slate-900 block mb-1">단기: 유창성(Fluency) 보강 (3개월)</strong>
+                                    읽기 속도와 정확도를 높여 MGT2 상단 레벨의 자신감을 확립하고, 더 넓은 어휘 범위를 가진 S2 수준의 읽기 자료에 노출되는 것을 목표로 합니다.
+                                </section>
+                                <section>
+                                    <strong class="text-slate-900 block mb-1">장기: 비판적 문해력 및 심화 사고력 배양</strong>
+                                    글의 이면을 추론하는 능력을 키워 단순 언어 학습을 넘어 '영어로 사고하는 힘'을 기릅니다. 이는 최상위(MAG2) 레벨의 심화 토론과 영작문을
+                                    준비하는 필수 과정입니다.
+                                </section>
+                                <section class="p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+                                    <strong class="text-indigo-900 block mb-2">🏠 가정 내 학습 지원 TIP</strong>
+                                    <ul class="space-y-1 text-xs list-disc pl-4">
+                                        <li><strong>영문 원서 소리 내어 읽기:</strong> 지우의 목소리로 이야기를 들려주며 표현의 즐거움을 느끼게 해주세요.</li>
+                                        <li><strong>'왜?'라고 질문하기:</strong> 정답 확인보다는 "지우는 왜 그렇게 생각해?"라고 질문하여 논리력을 자극해 주세요.
+                                        </li>
+                                        <li><strong>결과보다 과정 칭찬:</strong> 높은 점수보다 "이번에 지문 3개를 끝까지 다 읽었네!"와 같이 구체적인 노력을
+                                            칭찬해 주시는 것이 중요합니다.</li>
+                                    </ul>
+                                </section>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Tab 3: Teaching Guide -->
+            <div id="tab-3" class="tab-content hidden transition-all duration-300">
+                <section id="section-4" class="mb-12">
+                    <h2 class="section-title">3. 학생 맞춤형 교수법 가이드 (담임 교사용)</h2>
+
+                    <!-- 1. 데이터 해석 가이드 (교사의 안목) -->
+                    <div class="card border-l-8 border-blue-600 mb-8">
+                        <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm">1</span>
+                            데이터 해석 가이드 (교사의 안목)
+                        </h3>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-6">
+                            <!-- National Position -->
+                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                                <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                    <span>📊</span> 전국 단위 위치 (상대적 경쟁력)
+                                </h4>
+                                <div class="relative h-48 w-full mb-4">
+                                    <canvas id="jiwooPositionChart_guide"></canvas>
+                                </div>
+                                <p class="text-sm text-slate-600 leading-relaxed">
+                                    <strong class="text-blue-600">핵심 포인트:</strong> 현재 MGT2 레벨 내에서는 상위권이나, 전국 통합 기준
+                                    5등급(상위 35%)에 걸쳐 있습니다.
+                                    이는 <span class="bg-yellow-100 px-1 font-bold">'현재 레벨 내 성과에 안주'</span>하지 않도록, S2/MAG2
+                                    진입을
+                                    위한 난이도 상향이 필요한 시점임을 시사합니다.
+                                </p>
+                            </div>
+
+                            <!-- Class Position -->
+                            <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                                <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                    <span>🧑‍🏫</span> 반내 위치 (학습 자신감)
+                                </h4>
+                                <div class="relative h-48 w-full mb-4">
+                                    <canvas id="jiwooClassPositionChart_guide"></canvas>
+                                </div>
+                                <p class="text-sm text-slate-600 leading-relaxed">
+                                    <strong class="text-green-600">핵심 포인트:</strong> 반 내 상위 20%로 학습 자신감이 매우 높은 상태입니다.
+                                    단순 반복 학습보다는 <span class="bg-green-100 px-1 font-bold">'Peer Teaching'</span>이나 심화
+                                    질문을 던져 반 전체의 면학 분위기를 주도하는 '학습 리더'로 활용하십시오.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm text-blue-900">
+                            <strong>💡 지도 가이드:</strong> "지우는 잘해요"라는 막연한 긍정보다, <strong>"현재 반에서는 훌륭하지만, 전국 상위권과의 격차는 문항당
+                                0.5점 차이의 정밀도에서 발생한다"</strong>는 점을 교사가 인지하고 지도해야 합니다.
+                        </div>
+                    </div>
+
+                    <!-- 2. 과목별 수업 집중 포인트 (Action Item) -->
+                    <div class="card border-l-8 border-emerald-600">
+                        <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm">2</span>
+                            과목별 수업 집중 포인트 (Action Item)
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Reading/English -->
+                            <div
+                                class="p-5 border border-slate-200 rounded-xl hover:border-emerald-300 transition-colors">
+                                <h4 class="font-bold text-emerald-700 mb-3 flex items-center gap-2">
+                                    📖 Reading & English
+                                </h4>
+                                <ul class="space-y-3 text-sm text-slate-600">
+                                    <li class="flex gap-2">
+                                        <span class="text-emerald-500 font-bold">Q:</span>
+                                        <span>'Drawing conclusions' 스킬이 강점이자 약점으로 동시 관측됨.</span>
+                                    </li>
+                                    <li class="flex gap-2">
+                                        <span class="text-blue-500 font-bold">Do:</span>
+                                        <span>추론 문항에서 <strong>'감(Intuition)'</strong>으로 답을 고르는 경향이 있음. 수업 중 "지문의 어떤 문장이
+                                            이 답의 근거가 되었니?"라고 질문하여 <strong>'Text-based Evidence'</strong>를 찾는 훈련을 1:1로
+                                            체크하십시오.</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Listening -->
+                            <div
+                                class="p-5 border border-slate-200 rounded-xl hover:border-emerald-300 transition-colors">
+                                <h4 class="font-bold text-emerald-700 mb-3 flex items-center gap-2">
+                                    🎧 Listening
+                                </h4>
+                                <ul class="space-y-3 text-sm text-slate-600">
+                                    <li class="flex gap-2">
+                                        <span class="text-emerald-500 font-bold">Q:</span>
+                                        <span>오답률 0%로 완벽한 이해도를 보임.</span>
+                                    </li>
+                                    <li class="flex gap-2">
+                                        <span class="text-blue-500 font-bold">Do:</span>
+                                        <span>단순 청취는 시간 낭비일 수 있음. 듣기 지문의 <strong>'Script'를 활용한 심화 독해</strong>나, 들으면서 동시에
+                                            요약하는 <strong>'Note-taking'</strong> 훈련으로 난이도를 상향 조정하여 제시하십시오.</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Speech/Vocabulary -->
+                            <div
+                                class="p-5 border border-slate-200 rounded-xl hover:border-emerald-300 transition-colors">
+                                <h4 class="font-bold text-emerald-700 mb-3 flex items-center gap-2">
+                                    🗣 Speech & Vocab
+                                </h4>
+                                <ul class="space-y-3 text-sm text-slate-600">
+                                    <li class="flex gap-2">
+                                        <span class="text-emerald-500 font-bold">Q:</span>
+                                        <span>'Using context clues' 발달이 상대적으로 더딤.</span>
+                                    </li>
+                                    <li class="flex gap-2">
+                                        <span class="text-blue-500 font-bold">Do:</span>
+                                        <span>모르는 단어가 나왔을 때 바로 사전적 의미를 알려주기보다, 앞뒤 문맥을 통해 의미를 추측해 보는 <strong>'Semantic
+                                                Mapping'</strong> 활동을 수업 시간에 지우에게 발문(Prompting)하십시오.</span>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Grammar/Foundations -->
+                            <div
+                                class="p-5 border border-slate-200 rounded-xl hover:border-emerald-300 transition-colors">
+                                <h4 class="font-bold text-emerald-700 mb-3 flex items-center gap-2">
+                                    ✍️ Grammar & Foundations
+                                </h4>
+                                <ul class="space-y-3 text-sm text-slate-600">
+                                    <li class="flex gap-2">
+                                        <span class="text-emerald-500 font-bold">Q:</span>
+                                        <span>문장 결합은 우수하나 인칭 대명사 등 기초 수일치에서 실수 발생.</span>
+                                    </li>
+                                    <li class="flex gap-2">
+                                        <span class="text-blue-500 font-bold">Do:</span>
+                                        <span>복잡한 구조는 잘 보지만 오히려 쉬운 규칙에서 <strong>'정교함(Precision) 부족'</strong>이 보임. Weekly
+                                            Test 오답 시 "법칙을 몰라서 틀렸는지, 급하게 풀어서 틀렸는지" 본인이 직접 분류하게 하십시오.</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. 담임교사용 상담 스크립트 (학부모 대응) -->
+                    <div class="card border-l-8 border-indigo-600 mt-8 mb-8">
+                        <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm">3</span>
+                            담임교사용 상담 스크립트 (학부모 대응)
+                        </h3>
+
+                        <div class="space-y-4">
+                            <div class="p-4 bg-indigo-50 rounded-lg border-l-4 border-indigo-300">
+                                <h4 class="font-bold text-indigo-900 text-sm mb-2">[상황 1] 높은 점수 대비 낮은 상대적 위치를 설명할 때</h4>
+                                <p class="text-sm text-slate-700 italic leading-relaxed">
+                                    "어머님, [학생 이름]는 이번 평가에서 [점수]점이라는 매우 우수한 성취도를 보였습니다. 다만, 전국 단위 MAG2~S2 구간에 실력자들이 밀집되어
+                                    있어 상대적 백분위는 5등급권(상위 35%)으로 나타났습니다. 이는 현재 학습에 문제가 있는 것이 아니라, <strong>'최상위권 진입을 위한
+                                        임계점(Critical Point)'</strong>에 도달했다는 증거입니다. 이제는 아는 것을 맞추는 단계를 넘어, 초고난도 문항의 변별력을
+                                    확보하는 정교함에 집중할 때입니다."
+                                </p>
+                            </div>
+
+                            <div class="p-4 bg-slate-50 rounded-lg border-l-4 border-slate-300">
+                                <h4 class="font-bold text-slate-900 text-sm mb-2">[상황 2] 학습 동기부여 및 레벨업 가능성을 강조할 때</h4>
+                                <p class="text-sm text-slate-700 italic leading-relaxed">
+                                    "현재 반 내에서는 상위 20%로 매우 안정적인 리더십을 보여주고 있습니다. 하지만 [학생 이름]의 잠재력을 고려할 때, 현재 레벨의 텍스트는 다소
+                                    익숙해진 경향이 보입니다. 다음 학기 S2 진입을 목표로, 지금보다 한 단계 높은 수준의 <strong>'추론형 독해'</strong> 과제를
+                                    개별적으로 부여하여 학습적 긴장감과 지적 호기심을 동시에 충족시키고자 합니다."
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. 학생 관리 로드맵 (Retention 전략) -->
+                    <div class="card border-l-8 border-rose-600">
+                        <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+                            <span
+                                class="w-8 h-8 rounded-full bg-rose-600 text-white flex items-center justify-center text-sm">4</span>
+                            학생 관리 로드맵 (Retention 전략)
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="p-4 bg-rose-50 rounded-xl border border-rose-100">
+                                <h4 class="font-bold text-rose-800 text-sm mb-3">Phase 1: 안정화 (Short-term)</h4>
+                                <ul class="text-xs text-slate-600 space-y-2">
+                                    <li>• 기초 수일치 및 문법 정밀도 완결</li>
+                                    <li>• 반 내 학습 리더 역할 부여로 소속감 강화</li>
+                                    <li>• Weekly Test 만점 습관화 작업</li>
+                                </ul>
+                            </div>
+                            <div class="p-4 bg-rose-50 rounded-xl border border-rose-100">
+                                <h4 class="font-bold text-rose-800 text-sm mb-3">Phase 2: 도약 (Mid-term)</h4>
+                                <ul class="text-xs text-slate-600 space-y-2">
+                                    <li>• S2 수준의 추론형 외부 지문 노출</li>
+                                    <li>• 오답 원인 분석(Meta-cognition) 훈련</li>
+                                    <li>• 전국 경쟁 지표의 점진적 상승(30% 이내)</li>
+                                </ul>
+                            </div>
+                            <div class="p-4 bg-rose-50 rounded-xl border border-rose-100">
+                                <h4 class="font-bold text-rose-800 text-sm mb-3">Phase 3: 안착 (Long-term)</h4>
+                                <ul class="text-xs text-slate-600 space-y-2">
+                                    <li>• 상위 레벨(S2/MAG2) 성공적 안착</li>
+                                    <li>• Academic Writing 확장 훈련</li>
+                                    <li>• 자가 주도적 심화 학습 역량 완성</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 p-4 bg-slate-900 text-white rounded-lg text-xs leading-relaxed">
+                            <strong>📌 Retention 핵심:</strong> 학생이 <strong>'내가 이 학원에서 실력의 벽을 깨고 성장하고 있다'</strong>는 실감을 하는
+                            것이 중요합니다. 특히 [상대평가 등급]에 실망하지 않도록, 개별 성취 지표(강점 스킬 강화 등)를 지속적으로 피드백하여 학습 지속성을 확보하십시오.
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+    </div>
+    </main>
+    </div>
+
+    <footer class="bg-slate-900 text-slate-400 py-8 text-center text-sm">
+        <p>© 2025 Education Data Analysis Team. Confidential Report.</p>
+    </footer>
+
+    <script>
+        function showTab(tabIndex) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+
+            // Show the selected tab
+            document.getElementById(`tab-${tabIndex}`).classList.remove('hidden');
+
+            // Update nav styles
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                btn.classList.remove('bg-blue-50', 'text-blue-600', 'active');
+            });
+            const activeBtn = document.getElementById(`tab-btn-${tabIndex}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-blue-50', 'text-blue-600', 'active');
+            }
+
+            // Update hash without scrolling
+            history.pushState(null, null, `#tab-${tabIndex}`);
+        }
+
+        // Handle initial load
+        window.addEventListener('load', () => {
+            const hash = window.location.hash;
+            if (hash && hash.startsWith('#tab-')) {
+                const index = hash.split('-')[1];
+                showTab(index);
+            } else {
+                showTab(1);
+            }
+        });
+        // Data derived from analysis (Step 15 Output)
+        const labels = ['1등급', '2등급', '3등급', '4등급', '5등급', '6등급', '7등급', '8등급', '9등급'];
+
+        // --- Color System ---
+        const colors = {
+            'MAG2': '#3b82f6', // Blue
+            'S2': '#8b5cf6',   // Purple
+            'MGT2': '#10b981', // Emerald
+            'GT2': '#94a3b8'   // Slate
+        };
+
+        // --- Grade Distribution logic ---
+        const gradeLabels = ['1등급', '2등급', '3등급', '4등급', '5등급', '6등급', '7등급', '8등급', '9등급'];
+        const levelLabels = ['GT2', 'MGT2', 'S2', 'MAG2'];
+
+        // Diverse color palette for 9 grades
+        const gradeColors = [
+            '#08306B', // 1등급 (Darkest Blue)
+            '#08519C', // 2등급
+            '#2171B5', // 3등급
+            '#4292C6', // 4등급
+            '#6BAED6', // 5등급
+            '#9ECAE1', // 6등급
+            '#C6DBEF', // 7등급
+            '#DEEBF7', // 8등급
+            '#F7FBFF'  // 9등급 (Lightest Blue)
+        ];
+
+        function getAbsGrade(score) {
+            if (score >= 54) return 0;
+            if (score >= 48) return 1;
+            if (score >= 42) return 2;
+            if (score >= 36) return 3;
+            if (score >= 30) return 4;
+            if (score >= 24) return 5;
+            if (score >= 18) return 6;
+            if (score >= 12) return 7;
+            return 8;
+        }
+
+        function getRelGrade(pct) {
+            if (pct <= 4) return 0;
+            if (pct <= 11) return 1;
+            if (pct <= 23) return 2;
+            if (pct <= 40) return 3;
+            if (pct <= 60) return 4;
+            if (pct <= 77) return 5;
+            if (pct <= 89) return 6;
+            if (pct <= 96) return 7;
+            return 8;
+        }
+
+        function createGradeChartConfig(dataArray, isRel = false) {
+            // 1. Thresholds (for tooltip display)
+            const absCuts = [0, 12, 18, 24, 30, 36, 42, 48, 54, 60];
+            let thr = absCuts;
+
+            if (isRel) {
+                const scores = scatterData.abs.map(d => d.y).sort((a, b) => b - a);
+                const n = scores.length;
+                const relCuts = [0];
+                [96, 89, 77, 60, 40, 23, 11, 4].reverse().forEach(p => {
+                    let idx = Math.min(Math.max(0, Math.floor(p / 100 * n)), n - 1);
+                    relCuts.push(scores[idx]);
+                });
+                relCuts.push(60);
+                thr = relCuts.sort((a, b) => a - b);
+            }
+
+            // 2. Calculate student counts per Level & Grade
+            const countMatrix = levelLabels.map(() => new Array(9).fill(0));
+            const levelTotals = new Array(4).fill(0);
+            dataArray.forEach(d => {
+                const lIdx = levelLabels.indexOf(d.level);
+                if (lIdx === -1) return;
+                const gIdx = isRel ? getRelGrade(d.y) : getAbsGrade(d.y);
+                countMatrix[lIdx][gIdx]++;
+                levelTotals[lIdx]++;
+            });
+
+            // 3. Create datasets (Grade 9 bottom to Grade 1 top)
+            const datasets = gradeLabels.map((label, gIdx) => {
+                return {
+                    label: label,
+                    data: levelLabels.map((_, lIdx) => countMatrix[lIdx][gIdx]),
+                    backgroundColor: gradeColors[gIdx],
+                    borderColor: '#fff',
+                    borderWidth: 1,
+                    stack: 'group0'
+                };
+            }).reverse();
+
+            return {
+                type: 'bar',
+                plugins: [ChartDataLabels],
+                data: {
+                    labels: levelLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            title: { display: true, text: '레벨 (Level)', font: { weight: 'bold', size: 14 } }
+                        },
+                        y: {
+                            stacked: true,
+                            title: { display: true, text: '학생 수 (Number of Students)', font: { weight: 'bold', size: 14 } },
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        datalabels: {
+                            color: (context) => {
+                                const hex = context.dataset.backgroundColor;
+                                return getColorLuminance(hex) > 0.6 ? '#1e293b' : '#fff';
+                            },
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value) => value > 5 ? value : '', // Only show if substantial
+                            clip: true
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const lIdx = context.dataIndex;
+                                    const count = context.raw;
+                                    const total = levelTotals[lIdx];
+                                    const pct = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+                                    const gIdx = 8 - context.datasetIndex; // Since reversed
+                                    const range = `${thr[gIdx]}~${thr[gIdx + 1]}점`;
+                                    return `${context.dataset.label}: ${count}명 (${pct}%, ${range})`;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'right',
+                            reverse: true,
+                            title: { display: true, text: '등급', font: { weight: 'bold' } },
+                            labels: { padding: 8, usePointStyle: true }
+                        }
+                    }
+                }
+            };
+        }
+
+        new Chart(document.getElementById('absScatterChart'), createGradeChartConfig(scatterData.abs, false));
+        new Chart(document.getElementById('relScatterChart'), createGradeChartConfig(scatterData.rel, true));
+
+        // --- Student Position Charts Initialization ---
+        function initStudentPositionCharts(canvasId, studentPercentile, isClass = false) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const points = 100;
+            const data = [];
+            const labels = [];
+
+            function normalPDF(x, mu, sigma) {
+                return (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2));
+            }
+
+            const mu = isClass ? 25 : 30;
+            const sigma = isClass ? 15 : 20;
+
+            for (let i = 0; i <= points; i++) {
+                labels.push(i + '%');
+                const val = normalPDF(i, mu, sigma) * 1000;
+                data.push(val);
+            }
+
+            const mainColor = isClass ? '#059669' : '#ef4444';
+            const lightBorderColor = isClass ? '#a7f3d0' : '#cbd5e1';
+            const lightBgColor = isClass ? 'rgba(167, 243, 208, 0.5)' : 'rgba(226, 232, 240, 0.5)';
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: isClass ? '반 학생 분포' : '전체 학생 분포',
+                            data: data,
+                            borderColor: lightBorderColor,
+                            backgroundColor: lightBgColor,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0,
+                            borderWidth: 1
+                        },
+                        {
+                            label: '김지우 학생 위치',
+                            data: labels.map((_, i) => i === studentPercentile ? data[i] : null),
+                            pointBackgroundColor: mainColor,
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 4,
+                            pointRadius: 10,
+                            pointHoverRadius: 12,
+                            showLine: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: { padding: { top: 40 } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    if (context.datasetIndex === 1) return `김지우: 상위 ${studentPercentile}%` + (isClass ? ' (반 내)' : '');
+                                    return isClass ? `반 전체 분포` : `전체 분포`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: (isClass ? '반별' : '전국') + ' 석차 백분위 (상위 %)',
+                                font: { weight: 'bold' }
+                            },
+                            grid: { display: false }
+                        },
+                        y: { display: false }
+                    }
+                },
+                plugins: [{
+                    afterDraw: (chart) => {
+                        const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+                        const xPos = x.getPixelForValue(studentPercentile + '%');
+                        ctx.save();
+                        ctx.beginPath();
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([5, 5]);
+                        ctx.strokeStyle = mainColor;
+                        ctx.moveTo(xPos, top);
+                        ctx.lineTo(xPos, bottom);
+                        ctx.stroke();
+                        ctx.fillStyle = mainColor;
+                        ctx.font = 'bold 15px Noto Sans KR';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillText(`김지우 학생 (상위 ${studentPercentile}%)`, xPos, top - 15);
+                        ctx.restore();
+                    }
+                }]
+            });
+        }
+
+        // Initialize all student position charts
+        initStudentPositionCharts('jiwooClassPositionChart', 20, true);
+        initStudentPositionCharts('jiwooClassPositionChart_guide', 20, true);
+        initStudentPositionCharts('jiwooPositionChart', 35, false);
+        initStudentPositionCharts('jiwooPositionChart_guide', 35, false);
+
+        // Utility to check color luminance for data labels
+        function getColorLuminance(hex) {
+            const c = hex.substring(1);
+            const rgb = parseInt(c, 16);
+            const r = (rgb >> 16) & 0xff;
+            const g = (rgb >> 8) & 0xff;
+            const b = (rgb >> 0) & 0xff;
+            return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>캠퍼스별 성적 분석 리포트</title>
+    <script src="dashboard_data.js"></script>
+    <style>
+        :root {
+            --primary-color: #5c5cce;
+            /* Purple tone from image */
+            --bg-color: #f8f9fa;
+            --text-color: #333;
+            --border-radius: 8px;
+        }
+
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            min-width: 250px;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: var(--primary-color);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            color: #333;
+        }
+
+        .section-title::before {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 24px;
+            background-color: var(--primary-color);
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .table-container {
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            table-layout: fixed;
+        }
+
+        th,
+        td {
+            text-align: center;
+            padding: 12px 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        /* First column header styling */
+        th:first-child {
+            width: 100px;
+            background-color: #4a4aa5;
+            /* Slightly darker purple */
+        }
+
+        td:first-child {
+            font-weight: 600;
+            background-color: #fcfcfc;
+            color: #555;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .accuracy-high {
+            color: #28a745;
+            font-weight: 700;
+        }
+
+        .accuracy-mid {
+            color: #fd7e14;
+            font-weight: 700;
+        }
+
+        .accuracy-low {
+            color: #dc3545;
+            font-weight: 700;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>캠퍼스별 성적 분석 리포트</h1>
+        </header>
+
+        <div class="controls">
+            <label for="campusSelect" style="font-weight: 600; margin-right: 10px;">캠퍼스 선택</label>
+            <select id="campusSelect">
+                <option value="">캠퍼스를 선택하세요</option>
+                <!-- Options will be populated by JS -->
+            </select>
+        </div>
+
+        <div id="dashboardContent" style="display: none;">
+            <h2 class="section-title">문항별 상세 분석</h2>
+
+            <!-- Table 1: Q1 - Q8 -->
+            <div class="table-container">
+                <table id="table1">
+                    <thead>
+                        <tr id="headerRow1">
+                            <th>문항</th>
+                            <!-- 1~8 headers -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="totalRow1">
+                            <td>응시인원</td>
+                            <!-- Data -->
+                        </tr>
+                        <tr id="correctRow1">
+                            <td>정답인원</td>
+                            <!-- Data -->
+                        </tr>
+                        <tr id="accuracyRow1">
+                            <td>정답률</td>
+                            <!-- Data -->
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Table 2: Q9 - Q15 -->
+            <div class="table-container">
+                <table id="table2">
+                    <thead>
+                        <tr id="headerRow2">
+                            <th>문항</th>
+                            <!-- 9~15 headers -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr id="totalRow2">
+                            <td>응시인원</td>
+                            <!-- Data -->
+                        </tr>
+                        <tr id="correctRow2">
+                            <td>정답인원</td>
+                            <!-- Data -->
+                        </tr>
+                        <tr id="accuracyRow2">
+                            <td>정답률</td>
+                            <!-- Data -->
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const data = window.dashboardData;
+            if (!data) {
+                alert('데이터를 불러오지 못했습니다. dashboard_data.js 파일을 확인해주세요.');
+                return;
+            }
+
+            const select = document.getElementById('campusSelect');
+            const groups = data.metadata.campus_groups;
+            const allStats = data.total_stats; // If we want to show 'Total' as an option
+
+            // Populate Dropdown
+            // Option to view '전체 캠퍼스' (Aggregate)
+            // const totalOption = document.createElement('option');
+            // totalOption.value = 'Total';
+            // totalOption.textContent = '전체 캠퍼스 (종합)';
+            // select.appendChild(totalOption);
+
+            // Grouped Options
+            Object.keys(groups).forEach(groupName => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = groupName + ' 캠퍼스';
+
+                groups[groupName].forEach(campus => {
+                    // Check if we have stats for this campus
+                    if (data.stats[campus]) {
+                        const option = document.createElement('option');
+                        option.value = campus;
+                        option.textContent = campus;
+                        optgroup.appendChild(option);
+                    }
+                });
+                select.appendChild(optgroup);
+            });
+
+            // Add ungrouped campuses if any
+            const groupedCampuses = new Set([].concat(...Object.values(groups)));
+            const otherCampuses = data.metadata.all_campuses_list.filter(c => !groupedCampuses.has(c));
+
+            if (otherCampuses.length > 0) {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = '기타 캠퍼스';
+                otherCampuses.forEach(campus => {
+                    if (data.stats[campus]) {
+                        const option = document.createElement('option');
+                        option.value = campus;
+                        option.textContent = campus;
+                        optgroup.appendChild(option);
+                    }
+                });
+                select.appendChild(optgroup);
+            }
+
+            // Add 'Total' option separately if needed or handle as ID
+            // Let's add 'Total Statistics' as a special value at the top
+            const totalOption = document.createElement('option');
+            totalOption.value = 'TOTAL_STATS';
+            totalOption.textContent = '전체 캠퍼스 종합';
+            select.insertBefore(totalOption, select.firstChild.nextSibling); // Insert after placeholder
+
+            // Add 'Direct' and 'FC' Group Options
+            if (data.group_stats) {
+                if (data.group_stats['직영']) {
+                    const directOption = document.createElement('option');
+                    directOption.value = 'GROUP_직영';
+                    directOption.textContent = '직영 캠퍼스 평균';
+                    directOption.style.fontWeight = 'bold';
+                    directOption.style.color = '#5c5cce';
+                    select.insertBefore(directOption, select.firstChild.nextSibling.nextSibling);
+                }
+                if (data.group_stats['FC']) {
+                    const fcOption = document.createElement('option');
+                    fcOption.value = 'GROUP_FC';
+                    fcOption.textContent = 'FC 캠퍼스 평균';
+                    fcOption.style.fontWeight = 'bold';
+                    fcOption.style.color = '#5c5cce';
+                    // Insert after Direct option if it exists, or after Total
+                    select.insertBefore(fcOption, select.firstChild.nextSibling.nextSibling.nextSibling);
+                }
+            }
+
+
+            select.addEventListener('change', function () {
+                const campus = this.value;
+                if (campus) {
+                    renderDashboard(campus);
+                    document.getElementById('dashboardContent').style.display = 'block';
+                } else {
+                    document.getElementById('dashboardContent').style.display = 'none';
+                }
+            });
+
+            // Auto select first if available or Total
+            if (select.options.length > 1) {
+                // select.value = 'TOTAL_STATS'; // Default to total? Or wait for user.
+                // User usually likes to pick. Let's wait.
+            }
+
+            function renderDashboard(campusKey) {
+                let stats;
+                if (campusKey === 'TOTAL_STATS') {
+                    stats = data.total_stats;
+                } else if (campusKey.startsWith('GROUP_')) {
+                    const groupName = campusKey.replace('GROUP_', '');
+                    stats = data.group_stats[groupName];
+                } else {
+                    stats = data.stats[campusKey];
+                }
+
+                if (!stats) {
+                    alert('해당 캠퍼스의 데이터가 없습니다.');
+                    return;
+                }
+
+                renderTableBlock(stats, 1, 8, 'headerRow1', 'totalRow1', 'correctRow1', 'accuracyRow1');
+                renderTableBlock(stats, 9, 15, 'headerRow2', 'totalRow2', 'correctRow2', 'accuracyRow2');
+            }
+
+            function renderTableBlock(stats, start, end, headerId, totalId, correctId, accuracyId) {
+                const headerRow = document.getElementById(headerId);
+                const totalRow = document.getElementById(totalId);
+                const correctRow = document.getElementById(correctId);
+                const accuracyRow = document.getElementById(accuracyId);
+
+                // Clear existing cells (except the first one which is the label)
+                while (headerRow.children.length > 1) headerRow.removeChild(headerRow.lastChild);
+                while (totalRow.children.length > 1) totalRow.removeChild(totalRow.lastChild);
+                while (correctRow.children.length > 1) correctRow.removeChild(correctRow.lastChild);
+                while (accuracyRow.children.length > 1) accuracyRow.removeChild(accuracyRow.lastChild);
+
+                for (let i = start; i <= end; i++) {
+                    const qData = stats[i] || { total: '-', correct_count: '-', accuracy: '-' };
+
+                    // Header
+                    const th = document.createElement('th');
+                    th.textContent = i + '번';
+                    headerRow.appendChild(th);
+
+                    // Total
+                    const tdTotal = document.createElement('td');
+                    tdTotal.textContent = qData.total;
+                    totalRow.appendChild(tdTotal);
+
+                    // Correct
+                    const tdCorrect = document.createElement('td');
+                    tdCorrect.textContent = qData.correct_count;
+                    correctRow.appendChild(tdCorrect);
+
+                    // Accuracy
+                    const tdAcc = document.createElement('td');
+                    let accVal = qData.accuracy;
+                    if (typeof accVal === 'number') {
+                        tdAcc.textContent = accVal.toFixed(2) + '%';
+                        if (accVal >= 70) tdAcc.className = 'accuracy-high';
+                        else if (accVal >= 30) tdAcc.className = 'accuracy-mid';
+                        else tdAcc.className = 'accuracy-low';
+                    } else {
+                        tdAcc.textContent = '-';
+                    }
+                    accuracyRow.appendChild(tdAcc);
+                }
+            }
+        });
+    </script>
+
+</body>
+
+</html>
